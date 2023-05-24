@@ -27,7 +27,7 @@ class PrometheusPusher:
 
     def _push_metrics(self):
         metric_gauge_and_value: List[Tuple[Gauge, MetricsValue]] = zip(
-            self._metric_collector_mapper.values() , self._current_metric_value
+            self._metric_collector_mapper.values(), self._current_metric_value
         )
         for metric_gauge, metric_val in metric_gauge_and_value:
             metric_gauge.set(metric_val)
@@ -45,12 +45,11 @@ class PrometheusPusher:
             raise ValueError(
                 f"Metrics values can only be set with a list with the same length. expexted {len(self._current_metric_value)} and got {len(values)}"
             )
-        all_values_are_float = len(list(filter(lambda x: isinstance(x,float), values))) == len(values)
+        all_values_are_float = len(
+            list(filter(lambda x: isinstance(x, float), values))
+        ) == len(values)
         if not all_values_are_float:
-            raise ValueError(
-                f"Metrics values can only be set As Float."
-            )
-
+            raise ValueError(f"Metrics values can only be set As Float.")
 
         self._current_metric_value = values
         self._push_metrics()

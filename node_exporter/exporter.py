@@ -27,7 +27,7 @@ class NodeExporter:
 
     def _generate_single_metric(self, metric_name: MetricsName):
         max_metric_value: float = getattr(self._node.resources, metric_name)
-        match max_metric_value: 
+        match max_metric_value:
             case Some(max_metric_value) if max_metric_value is not Nothing:
                 return random.uniform(0, int(max_metric_value))
             case Some(max_metric_value):
