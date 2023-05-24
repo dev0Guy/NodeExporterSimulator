@@ -10,6 +10,13 @@ class Resources:
     cpu: Maybe[int] = field(default=Nothing)
     gpu: Maybe[str] = field(default=Nothing)
 
+    def __attrs_post_init__(self):
+        match self.memory:
+            case Some(memory):
+                self.memory = Some(memory[:-2])
+            case Maybe.empty:
+                pass
+
 
 @define
 class Node:
