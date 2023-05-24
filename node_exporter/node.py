@@ -49,5 +49,5 @@ class Node:
         )
 
     def __attrs_post_init__(self):
-        config.load_kube_config()
+        config.load_incluster_config()
         self.resources = self.fetch_node_resource(self.name)
