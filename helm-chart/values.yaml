@@ -1,0 +1,15 @@
+namespace: monitoring
+
+prometheusGateway:
+  replicaCount: 1
+  # Add other configuration options for Prometheus Gateway
+
+prometheus:
+  replicaCount: 1
+  # Add other configuration options for Prometheus
+
+nodeExporterSimulator:
+  enabled: true
+  interval: '5s'
+
+  # Add other configuration options for the custom Python script

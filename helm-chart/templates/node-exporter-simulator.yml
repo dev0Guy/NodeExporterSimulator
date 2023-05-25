@@ -1,0 +1,27 @@
+{{- if .Values.nodeExporterSimulator.enabled }}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-exporter-simulator
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: node-exporter-simulator
+spec:
+  selector:
+    matchLabels:
+      app: node-exporter-simulator
+  template:
+    metadata:
+      labels:
+        app: node-exporter-simulator
+    spec:
+      serviceAccountName: node-exporter-simulator-account
+      containers:
+        - name: metrics-generator
+          image: dev0guy/node-exporter-simulator:v0.0.5
+          env:
+            - name: PROMETHEUS_GATEWAY_URL
+              value: "pushgateway:9091"
+            - name: PUSH_INTERVAL
+              value:  {{ .Values.nodeExporterSimulator.interval }}
+{{- end }}

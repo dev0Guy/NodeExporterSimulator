@@ -3,12 +3,14 @@ from returns.result import Result, Success, Failure, safe
 from node_exporter import NodeExporter
 from datetime import timedelta
 import os, regex_spm, logging
+import socket
+
 
 logging.basicConfig(level=logging.INFO)
 
 
 def load_node_name() -> str:
-    return os.environ["MY_NODE_NAME"]
+    return socket.gethostname()
 
 def load_prometheus_gateway_url() -> str:
     return os.environ["PROMETHEUS_GATEWAY_URL"]
@@ -16,7 +18,7 @@ def load_prometheus_gateway_url() -> str:
 @safe(exceptions=ValueError)
 def load_prometheus_push_interval() -> int:
     interval_str = os.environ["PUSH_INTERVAL"]
-    logging.info("Parsing PUSH_INTERVAL enviorment varibale")
+    logging.info(f"Parsing PUSH_INTERVAL enviorment varibale {interval_str}")
     match regex_spm.fullmatch_in(interval_str):
         case r"^(?P<time>\d+)([s])$" as input: # seconds
             logging.debug(f"Loaded prometheus interval as seconds. {input}")

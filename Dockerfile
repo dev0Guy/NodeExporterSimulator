@@ -12,7 +12,8 @@ RUN pip install -r requirements.txt
 FROM python:3.10-slim@sha256:2bac43769ace90ebd3ad83e5392295e25dfc58e58543d3ab326c3330b505283d
 WORKDIR /usr/app
 COPY --from=build /usr/app/venv ./venv
-COPY node_exporter/ .
+RUN mkdir node_exporter
+COPY ./node_exporter/ node_exporter
 COPY script.py .
 
 ENV PATH="/usr/app/venv/bin:$PATH"

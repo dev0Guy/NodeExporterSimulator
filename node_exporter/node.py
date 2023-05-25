@@ -1,10 +1,9 @@
 from returns.maybe import Maybe, Nothing, Some
-from returns.result import Success, Failure, safe
-from returns.pointfree import bind
-from returns.pipeline import flow
+from returns.result import Success, Failure
+from returns.result import safe
 from attrs import define, field, Factory
 from kubernetes import client, config
-
+import logging
 
 @define
 class Resources:
@@ -17,6 +16,7 @@ class Resources:
         match self.memory:
             case Some(memory):
                 self.memory = Some(memory[:-2])
+                logging.info(f"Build Resource Object")
             case Maybe.empty:
                 pass
 
@@ -55,11 +55,12 @@ class Node:
 
     def __attrs_post_init__(self):
         # if cannt load config file
-        match config.load_config():
+        match config.load_incluster_config():
             case Failure(config.config_exception.ConfigException as exp):
                 raise exp
         match self.fetch_node_resource(self.name):
             case Success(resources):
+                logging.info(f"Build Node Object")
                 self.resources = resources
             case Failure(AttributeError as exp):
                 raise exp
