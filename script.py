@@ -1,51 +1,45 @@
 from returns.maybe import Maybe, Nothing, Some
+from returns.result import Result, Success, Failure, safe
 from node_exporter import NodeExporter
 from datetime import timedelta
-import os, regex_spm
+import os, regex_spm, logging
 
-local_node_name: Maybe[str] = Maybe.from_optional(
-    os.environ.get("MY_NODE_NAME", Nothing)
-)
+logging.basicConfig(level=logging.INFO)
 
-prometheus_gateway_url: Maybe[str] = Maybe.from_optional(
-    os.environ.get("PROMETHEUS_GATEWAY_URL", Nothing)
-)
 
-prometheus_push_interval: Maybe[str] = Maybe.from_optional(
-    os.environ.get("PUSH_INTERVAL", Nothing)
-)
+def load_node_name() -> str:
+    return os.environ["MY_NODE_NAME"]
 
-class TimeInput:
-    seconds = r"^(?P<time>\d+)([s])$" 
-    minutes = r"^(?P<time>\d+)([m])$" 
-    hours = r"^(?P<time>\d+)([h])$" 
+def load_prometheus_gateway_url() -> str:
+    return os.environ["PROMETHEUS_GATEWAY_URL"]
 
-    @classmethod
-    def convert(cls, input: str) -> timedelta:
-        match regex_spm.fullmatch_in(input):
-            case TimeInput.seconds as input:
-                return timedelta(seconds=int(input['time']))
-            case TimeInput.minutes as input:
-                return timedelta(minutes=int(input['time']))
-            case TimeInput.hours as input:
-                return timedelta(hours=int(input['time']))
-            case _:
-                raise ValueError(f"")
+@safe(exceptions=ValueError)
+def load_prometheus_push_interval() -> int:
+    interval_str = os.environ["PUSH_INTERVAL"]
+    logging.info("Parsing PUSH_INTERVAL enviorment varibale")
+    match regex_spm.fullmatch_in(interval_str):
+        case r"^(?P<time>\d+)([s])$" as input: # seconds
+            logging.debug(f"Loaded prometheus interval as seconds. {input}")
+            return timedelta(seconds=int(input['time']))
+        case r"^(?P<time>\d+)([m])$" as input: # minutes
+            logging.debug(f"Loaded prometheus interval as minutes. {input}")
+            return timedelta(minutes=int(input['time']))
+        case r"^(?P<time>\d+)([h])$" as input: # hours
+            logging.debug(f"Loaded prometheus interval as hours. {input}")
+            return timedelta(hours=int(input['time']))
+        case _:
+            raise ValueError(f"Time Foramt is not supported. {interval_str}")
 
 
 if __name__ == "__main__":
-    if local_node_name is Nothing:
-        raise ValueError("MY_NODE_NAME enviorment varibale is missing")
-    if prometheus_gateway_url is Nothing:
-        raise ValueError("PROMETHEUS_GATEWAY_URL enviorment varibale is missing")
-    # get original values: 
-    local_node_name = local_node_name.value_or('NoVal')
-    prometheus_gateway_url = prometheus_gateway_url.value_or('NoVal')
-
-
-    match prometheus_push_interval:
-        case Some(prometheus_push_interval):
-            time_interval: timedelta = TimeInput.convert(prometheus_push_interval)
-            NodeExporter(time_interval,local_node_name,prometheus_gateway_url).generate()
-        case Maybe.empty:
-            raise ValueError("PROMETHEUS_GATEWAY_URL enviorment varibale is missing")
+    node_name = load_node_name()
+    gateway_url = load_prometheus_gateway_url()
+    logging.info('Loaded Env Varibale "MY_NODE_NAME"')
+    logging.info('Loaded Env Varibale "PROMETHEUS_GATEWAY_URL"')
+    match load_prometheus_push_interval():
+        case Success(interval):
+            NodeExporter(interval, node_name, gateway_url).generate()
+        case Failure(ValueError as e ):
+            logging.error(str(e))
+        case Failure(Exception as e):
+            raise e

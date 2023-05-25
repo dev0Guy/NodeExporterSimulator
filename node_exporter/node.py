@@ -1,4 +1,7 @@
 from returns.maybe import Maybe, Nothing, Some
+from returns.result import Success, Failure, safe
+from returns.pointfree import bind
+from returns.pipeline import flow
 from attrs import define, field, Factory
 from kubernetes import client, config
 
@@ -24,7 +27,9 @@ class Node:
     resources: Resources = Factory(Resources)
 
     @classmethod
+    @safe(exceptions=(AttributeError))
     def fetch_node_resource(cls, node_name: str) -> Resources:
+        # config.load_kube_config()
         api_client = client.CoreV1Api()
         node = api_client.read_node(node_name)
 
@@ -49,5 +54,12 @@ class Node:
         )
 
     def __attrs_post_init__(self):
-        config.load_incluster_config()
-        self.resources = self.fetch_node_resource(self.name)
+        # if cannt load config file
+        match config.load_config():
+            case Failure(config.config_exception.ConfigException as exp):
+                raise exp
+        match self.fetch_node_resource(self.name):
+            case Success(resources):
+                self.resources = resources
+            case Failure(AttributeError as exp):
+                raise exp

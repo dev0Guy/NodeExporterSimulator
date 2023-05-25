@@ -7,6 +7,7 @@ from typing import List
 import attrs
 import random
 import time
+import logging
 
 
 @define
@@ -19,6 +20,7 @@ class NodeExporter:
     _metrics_names: List[str] = field(init=False)
 
     def __attrs_post_init__(self):
+        logging.info("Building Node Exporter")
         self._metrics_names = [field.name for field in attrs.fields(Resources)]
         self._node = Node(self.node_name)
         self._pusher = PrometheusPusher(

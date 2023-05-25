@@ -3,7 +3,6 @@ from prometheus_client import Gauge, push_to_gateway
 from attrs import define, Factory, field
 from typing import Dict, List, Tuple
 
-
 # Type Alias
 MetricsName = str
 MetricsValue = float
