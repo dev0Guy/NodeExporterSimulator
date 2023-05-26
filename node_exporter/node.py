@@ -4,71 +4,40 @@ from returns.result import safe
 from attrs import define, field, Factory
 from kubernetes import client, config
 from typing import Tuple
-import logging
+import logging, kopf
+import itertools, attrs
 
 
 @define
 class Resources:
-    net_bandwidth: Maybe[str] = field(default=Nothing)
-    memory: Maybe[str] = field(default=Nothing)
-    cpu: Maybe[int] = field(default=Nothing)
-    gpu: Maybe[str] = field(default=Nothing)
+    net_bandwidth: float = field(default=0.0)
+    memory: float = field(default=0.0)
+    cpu: float = field(default=0.0)
+    gpu: float = field(default=0.0)
 
-    def __attrs_post_init__(self):
-        match self.memory:
-            case Some(memory):
-                self.memory = Some(memory[:-2])
-                logging.info(f"Build Resource Object")
-            case Maybe.empty:
-                pass
+    def __add__(self, other):
+        if self.__class__ is other.__class__:
+            raise ValueError(f"Only Resources Type can be added. not {type(other)}")
+        new_resource = self.__class__()
+        for _field in attrs.fields(self.__class__):
+            combined_val: float = self.__getattribute__(
+                _field.name
+            ) + other.__getattribute__(_field.name)
+            new_resource.__setattr__(_field.name, combined_val)
+        return new_resource
 
 
 @define
 class Node:
-    name: str = field(init=False)
-    _pod_name: str
-    _pod_namespace: str
-    resources: Resources = Factory(Resources)
+    name: str
+    limit: Resources
+    _usage: Resources = Factory(Resources)
 
-    @classmethod
-    @safe(exceptions=(AttributeError))
-    def fetch_node_resource(cls, pod_name: str, pod_namespace: str) -> Tuple[str, Resources]:
-        api_client = client.CoreV1Api()
-        logging.debug(f"Called fetch_node_resource with arguments of {pod_name} , {pod_namespace}")
-        pod = api_client.read_namespaced_pod(pod_name, pod_namespace)
-        node_name = pod.spec.node_name
-        logging.info(f"Load Node {node_name} Resources")
-        node = api_client.read_node(node_name)
+    @property
+    def usage(self) -> Resources:
+        return self._usage
 
-        # Fetch all node resources
-        capacity: dict = node.status.capacity
-
-        cpu_capacity = Maybe.from_optional(capacity.get("cpu", Nothing))
-
-        memory_capacity = Maybe.from_optional(capacity.get("memory", Nothing))
-
-        network_bandwidth_capacity = Maybe.from_optional(
-            capacity.get("network_bandwidth", Nothing)
-        )
-
-        gpu_capacity = Maybe.from_optional(capacity.get("nvidia.com/gpu", Nothing))
-        
-        return (node_name, Resources(
-            cpu=cpu_capacity,
-            gpu=gpu_capacity,
-            memory=memory_capacity,
-            net_bandwidth=network_bandwidth_capacity,
-        ))
-
-    def __attrs_post_init__(self):
-        # if cannt load config file
-        match config.load_incluster_config():
-            case Failure(config.config_exception.ConfigException as exp):
-                raise exp
-        match self.fetch_node_resource(self._pod_name, self._pod_namespace):
-            case Success(resources):
-                self.name, resources = resources
-                logging.debug(f"Build Node {self.name}: {resources}")
-                self.resources = resources
-            case Failure(AttributeError as exp):
-                raise exp
+    @usage.setter
+    def usage(self, usage: Resources):
+        logging.debug(f"Updateing usage_property: {usage}")
+        self._usage = usage

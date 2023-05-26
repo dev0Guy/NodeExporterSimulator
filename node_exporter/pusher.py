@@ -2,6 +2,7 @@ from prometheus_client.registry import CollectorRegistry
 from prometheus_client import Gauge, push_to_gateway
 from attrs import define, Factory, field
 from typing import Dict, List, Tuple
+import logging
 
 # Type Alias
 MetricsName = str
@@ -30,6 +31,7 @@ class PrometheusPusher:
         )
         for metric_gauge, metric_val in metric_gauge_and_value:
             metric_gauge.set(metric_val)
+            logging.warn(f"Pushing: {metric_val}")
         push_to_gateway(
             gateway=self.gateway_url, job=self.job_name, registry=self._registry
         )
