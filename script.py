@@ -9,7 +9,10 @@ import socket
 logging.basicConfig(level=logging.INFO)
 
 
-def load_node_name() -> str:
+def load_pod_namespace() -> str:
+    return os.environ.get("POD_NAMESPACE")
+
+def load_pod_name() -> str:
     return socket.gethostname()
 
 def load_prometheus_gateway_url() -> str:
@@ -34,13 +37,15 @@ def load_prometheus_push_interval() -> int:
 
 
 if __name__ == "__main__":
-    node_name = load_node_name()
+    pod_name_space = load_pod_namespace()
+    logging.info(f'Loaded Env Varibale "POD_NAMESPACE: {pod_name_space}"')
+    pod_name = load_pod_name()
+    logging.info(f'Loaded HostName: {pod_name}')
     gateway_url = load_prometheus_gateway_url()
-    logging.info('Loaded Env Varibale "MY_NODE_NAME"')
-    logging.info('Loaded Env Varibale "PROMETHEUS_GATEWAY_URL"')
+    logging.info(f'Loaded Env Varibale "PROMETHEUS_GATEWAY_URL": {gateway_url}')
     match load_prometheus_push_interval():
         case Success(interval):
-            NodeExporter(interval, node_name, gateway_url).generate()
+            NodeExporter(interval, pod_name, pod_name_space, gateway_url).generate()
         case Failure(ValueError as e ):
             logging.error(str(e))
         case Failure(Exception as e):

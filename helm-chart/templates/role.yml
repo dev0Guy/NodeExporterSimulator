@@ -10,7 +10,7 @@ metadata:
   name: node-exporter-simulator-role
 rules:
   - apiGroups: [""]
-    resources: ["nodes"]
+    resources: ["nodes","pods"]
     verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1

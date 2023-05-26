@@ -13,7 +13,8 @@ import logging
 @define
 class NodeExporter:
     interval: timedelta
-    node_name: str
+    pod_name: str
+    pod_namespace: str
     gateway_url: str
     _node: Node = field(init=False)
     _pusher: PrometheusPusher = field(init=False)
@@ -22,7 +23,7 @@ class NodeExporter:
     def __attrs_post_init__(self):
         logging.info("Building Node Exporter")
         self._metrics_names = [field.name for field in attrs.fields(Resources)]
-        self._node = Node(self.node_name)
+        self._node = Node(self.pod_name, self.pod_namespace)
         self._pusher = PrometheusPusher(
             self._node.name, self.gateway_url, self._metrics_names
         )
@@ -31,16 +32,25 @@ class NodeExporter:
         max_metric_value: float = getattr(self._node.resources, metric_name)
         match max_metric_value:
             case Some(max_metric_value) if max_metric_value is not Nothing:
-                return random.uniform(0, int(max_metric_value))
+                resource_usage = random.uniform(0, int(max_metric_value))
+                logging.debug(f"Pushing into prometheus: ({metric_name},{resource_usage})")
+                return resource_usage
             case Some(max_metric_value):
-                return 0.0
+                resource_usage = 0.0
+                logging.debug(f"Pushing into prometheus: ({metric_name},{resource_usage})")
+                return resource_usage
             case Maybe.empty:
-                return 0.0
+                resource_usage = 0.0
+                logging.debug(f"Pushing into prometheus: ({metric_name},{resource_usage})")
+                return resource_usage
 
     def generate(self):
+        sleep_seconds: int = self.interval.total_seconds()
         while True:
             generated_values = list(
                 map(self._generate_single_metric, self._metrics_names)
             )
+            logging.info("Pushing Metrics into proemtheus")
             self._pusher.metrics_values = generated_values
-            time.sleep(self.interval.total_seconds())
+            logging.info(f"Sleeping: {sleep_seconds} seconds")
+            time.sleep(sleep_seconds)

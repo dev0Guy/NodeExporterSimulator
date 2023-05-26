@@ -18,10 +18,14 @@ spec:
       serviceAccountName: node-exporter-simulator-account
       containers:
         - name: metrics-generator
-          image: dev0guy/node-exporter-simulator:v0.0.5
+          image: dev0guy/node-exporter-simulator:v1.0.1
           env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
             - name: PROMETHEUS_GATEWAY_URL
-              value: "pushgateway:9091"
+              value: "prometheus-gateway:9091"
             - name: PUSH_INTERVAL
               value:  {{ .Values.nodeExporterSimulator.interval }}
 {{- end }}
