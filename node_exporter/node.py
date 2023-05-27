@@ -1,6 +1,6 @@
 from .resouce import Resource
 from attrs import define, Factory
-import logging, attrs
+import attrs
 
 
 @define
@@ -43,5 +43,4 @@ class Node:
 
     @usage.setter
     def usage(self, usage: NodeResources):
-        logging.debug(f"Updateing usage_property: {usage}")
         self._usage = usage

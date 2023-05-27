@@ -1,6 +1,6 @@
 from attrs import define, field
 from enum import Enum
-import logging, random
+import random
 
 
 class ResourceType(Enum):
@@ -13,9 +13,13 @@ class Resource:
     kind: ResourceType = field(default=ResourceType.NUMERICAL)
     _value: float = field(default=0.0)
 
+    @property
+    def value(self) -> float:
+        return self._value
+
     @classmethod
     def create_district(cls) -> "Resource":
-        return cls(ResourceType.DISCRETE, 0)
+        return cls(ResourceType.DISCRETE, 0.0)
 
     def __str__(self) -> str:
         return str(self._value)
@@ -63,11 +67,11 @@ class Resource:
         match self.kind:
             case ResourceType.DISCRETE:
                 return self.__class__(
-                    ResourceType.DISCRETE, random.randint(0, self._value)
+                    ResourceType.DISCRETE, random.randint(0.0, self._value)
                 )
             case ResourceType.NUMERICAL:
                 return self.__class__(
-                    ResourceType.NUMERICAL, random.uniform(0, self._value)
+                    ResourceType.NUMERICAL, random.uniform(0.0, self._value)
                 )
             case _:
                 TypeError(

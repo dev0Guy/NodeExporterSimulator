@@ -2,7 +2,6 @@ from prometheus_client.registry import CollectorRegistry
 from prometheus_client import Gauge, push_to_gateway
 from attrs import define, Factory, field
 from typing import Dict, List, Tuple
-import logging
 
 # Type Alias
 MetricsName = str
@@ -31,7 +30,6 @@ class PrometheusPusher:
         )
         for metric_gauge, metric_val in metric_gauge_and_value:
             metric_gauge.set(metric_val)
-            logging.warn(f"Pushing: {metric_val}")
         push_to_gateway(
             gateway=self.gateway_url, job=self.job_name, registry=self._registry
         )
@@ -49,8 +47,8 @@ class PrometheusPusher:
         all_values_are_float = len(
             list(filter(lambda x: isinstance(x, float), values))
         ) == len(values)
-        if not all_values_are_float:
-            raise ValueError(f"Metrics values can only be set As Float.")
+        # if not all_values_are_float:
+        #     raise ValueError(f"Metrics values can only be set As Float.")
 
         self._current_metric_value = values
         self._push_metrics()

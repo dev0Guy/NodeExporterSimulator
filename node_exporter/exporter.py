@@ -3,7 +3,7 @@ from .node import Node, NodeResources
 from attrs import define, field
 from datetime import timedelta
 from typing import List
-import attrs, logging
+import attrs
 
 
 @define
@@ -28,7 +28,6 @@ class NodeExporter:
         self._pusher.metrics_values = self.node.usage
 
     def __attrs_post_init__(self):
-        logging.info("Building Node Exporter")
         self._metrics_names = [
             field.name for field in attrs.fields(self.node.limit.__class__)
         ]

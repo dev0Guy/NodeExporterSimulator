@@ -1,6 +1,7 @@
 from node_exporter import NodeExporter, Node, NodeResources
 from kubernetes import client, config
 from datetime import timedelta
+from typing import List
 from functools import reduce
 import logging, kopf, socket
 import os, regex_spm, attrs, re
@@ -56,6 +57,23 @@ def create_node() -> Node:
     return Node(node_name, node_resource)
 
 
+def get_object_attr_values(_obj: object) -> List[float]:
+    _object_att = dir(_obj)
+    return list(
+        map(
+            lambda x: x.value,
+            map(
+                lambda x: _obj.__getattribute__(x),
+                filter(
+                    lambda _attr: not _attr.startswith("__")
+                    and not callable(getattr(_obj, _attr)),
+                    _object_att,
+                ),
+            ),
+        )
+    )
+
+
 class KubernetesMannager:
     INTERVAL: timedelta = load_prometheus_push_interval()
     GATEWAY_URL: str = os.environ["PROMETHEUS_GATEWAY_URL"]
@@ -64,29 +82,36 @@ class KubernetesMannager:
 
     @staticmethod
     async def start():
+        logging.info("Starting Node Exporter Simulator")
+        logging.info(f"Prometheus gateway url: {KubernetesMannager.GATEWAY_URL}")
         sleep_seconds: int = KubernetesMannager.INTERVAL.total_seconds()
+        logging.info(f"Sleeping time set as {sleep_seconds}s")
+        logging.info(f"Start Pushin Metrics into prometheus")
         while True:
-            logging.info("Pushing Metrics into proemtheus")
             pods_resources = [*KubernetesMannager.PODS.values()]
             node_resources = (
                 NodeResources()
                 if len(pods_resources) <= 0
                 else reduce(lambda a, b: a + b, pods_resources)
             )
+            logging.debug(f"Collect Node Metrics. Got Max {node_resources}")
             node_usage: NodeResources = node_resources.random_generate()
-            usage_as_list = list(attrs.asdict(node_usage).values())
+            usage_as_list = get_object_attr_values(node_usage)
+            logging.debug(f"Collect Node Metrics. Gnerated {node_resources}")
             KubernetesMannager.NODE_EXPORTER.node_usage = usage_as_list
-            logging.warning(f"Sleeping: {sleep_seconds} seconds")
             await asyncio.sleep(sleep_seconds)
+
+
+@kopf.on.startup()
+def configure(settings: kopf.OperatorSettings, **_):
+    settings.posting.level = logging.INFO
 
 
 @kopf.on.update("v1", "pods")
 @kopf.on.create("v1", "pods")
 def pod_creation(spec, name, namespace, uid, **kwargs):
     if spec.get("nodeName") == KubernetesMannager.NODE_EXPORTER.name:
-        logging.warning(
-            f"Event: {'event_type'} Pod: {name} Namespace: {namespace}, {spec.get('nodeName')}"
-        )
+        logging.info(f"Pod {name} Has been Created/Updated in Namespace {namespace}")
         node_resources = list(
             map(
                 lambda x: x.name,
@@ -95,9 +120,11 @@ def pod_creation(spec, name, namespace, uid, **kwargs):
         )
         pod_resource = NodeResources()
         for container in spec.get("containers", {}):
-            limits: dict = container.get("resources", {}).get("limits")
+            limits: dict = container.get("resources", {}).get("limits", None)
             if limits is None:
-                logging.error("limit is not spec")
+                logging.warning(
+                    f"Pod {name} has container {container.name} with no limit"
+                )
                 continue
             for resource_name, resource_val in limits.items():
                 if resource_name in node_resources:
@@ -111,7 +138,9 @@ def pod_creation(spec, name, namespace, uid, **kwargs):
                             val = "".join(re.findall(r"\d+", resource_val))
                             val = float(val)
                         case _:
-                            logging.error("FL<D<sl;fl,sd")
+                            logging.warning(
+                                f"Pod {name} has container {container.name} with un reconize limit {resource_val} "
+                            )
                             continue
                     new_resource_val = (
                         pod_resource.__getattribute__(resource_name) + val
@@ -122,14 +151,14 @@ def pod_creation(spec, name, namespace, uid, **kwargs):
                         f"Container in pod: {name} Have limit of {resource_name} witch doen't exist in {KubernetesMannager.NODE_EXPORTER.node.limit.__class__} "
                     )
         KubernetesMannager.PODS[uid] = pod_resource
-        logging.warning(f"Added Pod{uid} informatin")
 
 
 @kopf.on.delete("v1", "pods", labels={})
-def pod_deletion(name, namespace, uid, **kwargs):
-    logging.warning(f"Event: {'event_type'} Pod: {name} Namespace: {namespace}")
-    if uid in KubernetesMannager.PODS:
-        KubernetesMannager.PODS.pop(uid)
+def pod_deletion(name, namespace, spec, uid, **kwargs):
+    if spec.get("nodeName") == KubernetesMannager.NODE_EXPORTER.name:
+        logging.info(f"Pod {name} Has been Created/Updated in Namespace {namespace}")
+        if uid in KubernetesMannager.PODS:
+            KubernetesMannager.PODS.pop(uid)
 
 
 async def main():
