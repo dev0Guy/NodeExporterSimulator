@@ -17,4 +17,4 @@ COPY ./node_exporter/ node_exporter
 COPY script.py .
 
 ENV PATH="/usr/app/venv/bin:$PATH"
-ENTRYPOINT ["kopf", "run", "-v","--log-format=ful", "script.py"]
+ENTRYPOINT ["python3", "script.py"]
