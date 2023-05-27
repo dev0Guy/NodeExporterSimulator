@@ -7,8 +7,8 @@ import logging, kopf, socket
 import os, regex_spm, attrs, re
 import asyncio
 
-# config.load_incluster_config()
-config.load_kube_config()
+config.load_incluster_config()
+# config.load_kube_config()
 
 
 def load_prometheus_push_interval() -> int:
@@ -31,7 +31,7 @@ def load_prometheus_push_interval() -> int:
 def create_node() -> Node:
     api = client.CoreV1Api()
     pod_namespace = os.environ.get("POD_NAMESPACE")
-    pod_name = "prometheus-gateway-549496895-4h9pk"  # socket.gethostname()
+    pod_name = socket.gethostname()
     logging.debug(
         f"Called fetch_node_resource with arguments of {pod_name} , {pod_namespace}"
     )
