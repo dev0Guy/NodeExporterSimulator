@@ -11,7 +11,7 @@ class NodeResources:
     gpu: Resource = Factory(Resource.create_district)
 
     def __add__(self, other):
-        if self.__class__ is other.__class__:
+        if self.__class__ is not other.__class__:
             raise ValueError(
                 f"Only {self.__class__} Type can be added. not {other.__class__:}"
             )

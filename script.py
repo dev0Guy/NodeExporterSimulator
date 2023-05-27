@@ -5,14 +5,14 @@ from typing import List
 from functools import reduce
 import logging, kopf, socket
 import os, regex_spm, attrs, re
-import asyncio
+import time, asyncio
 
-config.load_incluster_config()
-
+# config.load_incluster_config()
+config.load_kube_config()
 
 def load_prometheus_push_interval() -> int:
     interval_str = os.environ["PUSH_INTERVAL"]
-    logging.info(f"Parsing PUSH_INTERVAL enviorment varibale {interval_str}")
+    logging.warning(f"Parsing PUSH_INTERVAL enviorment varibale {interval_str}")
     match regex_spm.fullmatch_in(interval_str):
         case r"^(?P<time>\d+)([s])$" as input:  # seconds
             logging.debug(f"Loaded prometheus interval as seconds. {input}")
@@ -30,7 +30,7 @@ def load_prometheus_push_interval() -> int:
 def create_node() -> Node:
     api = client.CoreV1Api()
     pod_namespace = os.environ.get("POD_NAMESPACE")
-    pod_name = socket.gethostname()
+    pod_name = 'prometheus-gateway-549496895-4h9pk' #socket.gethostname()
     logging.debug(
         f"Called fetch_node_resource with arguments of {pod_name} , {pod_namespace}"
     )
@@ -74,6 +74,11 @@ def get_object_attr_values(_obj: object) -> List[float]:
     )
 
 
+@kopf.on.startup()
+def configure(settings: kopf.OperatorSettings, **kwargs):
+    settings.posting.level = logging.INFO
+
+
 class KubernetesMannager:
     INTERVAL: timedelta = load_prometheus_push_interval()
     GATEWAY_URL: str = os.environ["PROMETHEUS_GATEWAY_URL"]
@@ -81,7 +86,7 @@ class KubernetesMannager:
     PODS: dict = {}
 
     @staticmethod
-    async def start():
+    async def start(**kwargs):
         logging.info("Starting Node Exporter Simulator")
         logging.info(f"Prometheus gateway url: {KubernetesMannager.GATEWAY_URL}")
         sleep_seconds: int = KubernetesMannager.INTERVAL.total_seconds()
@@ -102,14 +107,10 @@ class KubernetesMannager:
             await asyncio.sleep(sleep_seconds)
 
 
-@kopf.on.startup()
-def configure(settings: kopf.OperatorSettings, **_):
-    settings.posting.level = logging.INFO
-
 
 @kopf.on.update("v1", "pods")
 @kopf.on.create("v1", "pods")
-def pod_creation(spec, name, namespace, uid, **kwargs):
+def pod_creation(logging ,spec, name, namespace, uid, **kwargs):
     if spec.get("nodeName") == KubernetesMannager.NODE_EXPORTER.name:
         logging.info(f"Pod {name} Has been Created/Updated in Namespace {namespace}")
         node_resources = list(
@@ -121,9 +122,10 @@ def pod_creation(spec, name, namespace, uid, **kwargs):
         pod_resource = NodeResources()
         for container in spec.get("containers", {}):
             limits: dict = container.get("resources", {}).get("limits", None)
+            container_name = container.get("name", "UNKNOWN")
             if limits is None:
                 logging.warning(
-                    f"Pod {name} has container {container.name} with no limit"
+                    f"Pod {name} has container {container_name} with no limit"
                 )
                 continue
             for resource_name, resource_val in limits.items():
@@ -139,7 +141,7 @@ def pod_creation(spec, name, namespace, uid, **kwargs):
                             val = float(val)
                         case _:
                             logging.warning(
-                                f"Pod {name} has container {container.name} with un reconize limit {resource_val} "
+                                f"Pod {name} has container {container_name} with un reconize limit {resource_val} "
                             )
                             continue
                     new_resource_val = (
@@ -161,11 +163,10 @@ def pod_deletion(name, namespace, spec, uid, **kwargs):
             KubernetesMannager.PODS.pop(uid)
 
 
-async def main():
+async def runner():
     task1 = asyncio.create_task(kopf.operator())
     task2 = asyncio.create_task(KubernetesMannager.start())
     await asyncio.gather(task1, task2)
 
-
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(runner())

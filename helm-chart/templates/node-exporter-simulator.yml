@@ -18,7 +18,7 @@ spec:
       serviceAccountName: node-exporter-simulator-account
       containers:
         - name: metrics-generator
-          image: dev0guy/node-exporter-simulator:v1.1.6
+          image: dev0guy/node-exporter-simulator:v2.0.6
           env:
             - name: POD_NAMESPACE
               valueFrom:
