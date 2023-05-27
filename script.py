@@ -5,10 +5,11 @@ from typing import List
 from functools import reduce
 import logging, kopf, socket
 import os, regex_spm, attrs, re
-import time, asyncio
+import asyncio
 
 # config.load_incluster_config()
 config.load_kube_config()
+
 
 def load_prometheus_push_interval() -> int:
     interval_str = os.environ["PUSH_INTERVAL"]
@@ -30,7 +31,7 @@ def load_prometheus_push_interval() -> int:
 def create_node() -> Node:
     api = client.CoreV1Api()
     pod_namespace = os.environ.get("POD_NAMESPACE")
-    pod_name = 'prometheus-gateway-549496895-4h9pk' #socket.gethostname()
+    pod_name = "prometheus-gateway-549496895-4h9pk"  # socket.gethostname()
     logging.debug(
         f"Called fetch_node_resource with arguments of {pod_name} , {pod_namespace}"
     )
@@ -107,10 +108,9 @@ class KubernetesMannager:
             await asyncio.sleep(sleep_seconds)
 
 
-
 @kopf.on.update("v1", "pods")
 @kopf.on.create("v1", "pods")
-def pod_creation(logging ,spec, name, namespace, uid, **kwargs):
+def pod_creation(logging, spec, name, namespace, uid, **kwargs):
     if spec.get("nodeName") == KubernetesMannager.NODE_EXPORTER.name:
         logging.info(f"Pod {name} Has been Created/Updated in Namespace {namespace}")
         node_resources = list(
@@ -163,10 +163,19 @@ def pod_deletion(name, namespace, spec, uid, **kwargs):
             KubernetesMannager.PODS.pop(uid)
 
 
+logging.getLogger().setLevel(logging.INFO)
+
+
 async def runner():
     task1 = asyncio.create_task(kopf.operator())
     task2 = asyncio.create_task(KubernetesMannager.start())
     await asyncio.gather(task1, task2)
 
+
 if __name__ == "__main__":
+    level = logging.INFO
+    logger = logging.getLogger()
+    logger.setLevel(level)
+    for handler in logger.handlers:
+        handler.setLevel(level)
     asyncio.run(runner())
