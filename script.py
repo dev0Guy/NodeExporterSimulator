@@ -1,4 +1,4 @@
-from node_exporter import NodeExporter, Node, NodeResources
+from node_exporter_simulator import NodeExporter, Node, NodeResources
 from kubernetes import client, config
 from datetime import timedelta
 from typing import List
