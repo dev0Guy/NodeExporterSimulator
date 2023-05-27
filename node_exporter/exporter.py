@@ -1,11 +1,9 @@
-from .pusher import PrometheusPusher, MetricsName
-from returns.maybe import Some, Maybe, Nothing
-from .node import Node, Resources
+from .pusher import PrometheusPusher
+from .node import Node, NodeResources
 from attrs import define, field
 from datetime import timedelta
 from typing import List
-import attrs
-import logging
+import attrs, logging
 
 
 @define
@@ -25,13 +23,15 @@ class NodeExporter:
         return self.node.usage
 
     @node_usage.setter
-    def node_usage(self, usage: Resources):
+    def node_usage(self, usage: NodeResources):
         self.node.usage = usage
         self._pusher.metrics_values = self.node.usage
 
     def __attrs_post_init__(self):
         logging.info("Building Node Exporter")
-        self._metrics_names = [field.name for field in attrs.fields(Resources)]
+        self._metrics_names = [
+            field.name for field in attrs.fields(self.node.limit.__class__)
+        ]
         self._pusher = PrometheusPusher(
             self.node.name, self.gateway_url, self._metrics_names
         )

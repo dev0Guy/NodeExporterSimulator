@@ -18,7 +18,7 @@ spec:
       serviceAccountName: node-exporter-simulator-account
       containers:
         - name: metrics-generator
-          image: dev0guy/node-exporter-simulator:v1.0.6
+          image: dev0guy/node-exporter-simulator:v1.1.6
           env:
             - name: POD_NAMESPACE
               valueFrom:
@@ -28,9 +28,9 @@ spec:
               value: "prometheus-gateway:9091"
             - name: PUSH_INTERVAL
               value:  {{ .Values.nodeExporterSimulator.interval }}
-      dependsOn:
-        - podName: prometheus-gateway
-           condition: "Ready"
-        - service:
-            name: prometheus-gateway
+  dependsOn:
+    - podName: prometheus-gateway
+      condition: "Running"
+    - service:
+        name: prometheus-gateway
 {{- end }}

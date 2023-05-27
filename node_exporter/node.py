@@ -1,23 +1,20 @@
-from returns.maybe import Maybe, Nothing, Some
-from returns.result import Success, Failure
-from returns.result import safe
-from attrs import define, field, Factory
-from kubernetes import client, config
-from typing import Tuple
-import logging, kopf
-import itertools, attrs
+from .resouce import Resource
+from attrs import define, Factory
+import logging, attrs
 
 
 @define
-class Resources:
-    net_bandwidth: float = field(default=0.0)
-    memory: float = field(default=0.0)
-    cpu: float = field(default=0.0)
-    gpu: float = field(default=0.0)
+class NodeResources:
+    net_bandwidth: Resource = Factory(Resource)
+    memory: Resource = Factory(Resource)
+    cpu: Resource = Factory(Resource.create_district)
+    gpu: Resource = Factory(Resource.create_district)
 
     def __add__(self, other):
         if self.__class__ is other.__class__:
-            raise ValueError(f"Only Resources Type can be added. not {type(other)}")
+            raise ValueError(
+                f"Only {self.__class__} Type can be added. not {other.__class__:}"
+            )
         new_resource = self.__class__()
         for _field in attrs.fields(self.__class__):
             combined_val: float = self.__getattribute__(
@@ -26,18 +23,25 @@ class Resources:
             new_resource.__setattr__(_field.name, combined_val)
         return new_resource
 
+    def random_generate(self) -> "NodeResources":
+        tmp: NodeResources = self.__class__()
+        for _field in attrs.fields(self.__class__):
+            resource: Resource = self.__getattribute__(_field.name).random()
+            tmp.__setattr__(_field.name, resource)
+        return tmp
+
 
 @define
 class Node:
     name: str
-    limit: Resources
-    _usage: Resources = Factory(Resources)
+    limit: NodeResources
+    _usage: NodeResources = Factory(NodeResources)
 
     @property
-    def usage(self) -> Resources:
+    def usage(self) -> NodeResources:
         return self._usage
 
     @usage.setter
-    def usage(self, usage: Resources):
+    def usage(self, usage: NodeResources):
         logging.debug(f"Updateing usage_property: {usage}")
         self._usage = usage
