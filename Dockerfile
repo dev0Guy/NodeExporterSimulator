@@ -13,7 +13,7 @@ FROM python:3.10-slim@sha256:2bac43769ace90ebd3ad83e5392295e25dfc58e58543d3ab326
 WORKDIR /usr/app
 COPY --from=build /usr/app/venv ./venv
 RUN mkdir node_exporter
-COPY ./node_exporter/ node_exporter
+COPY ./node_exporter_simulator/ node_exporter_simulator
 COPY script.py .
 
 ENV PATH="/usr/app/venv/bin:$PATH"

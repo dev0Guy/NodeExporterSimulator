@@ -49,6 +49,6 @@ class PrometheusPusher:
         ) == len(values)
         # if not all_values_are_float:
         #     raise ValueError(f"Metrics values can only be set As Float.")
-
+        print(values)
         self._current_metric_value = values
         self._push_metrics()

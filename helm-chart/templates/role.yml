@@ -10,8 +10,8 @@ metadata:
   name: node-exporter-simulator-role
 rules:
   - apiGroups: [""]
-    resources: ["nodes","pods"]
-    verbs: ["get", "list", "watch","patch"]
+    resources: ["nodes","pods","events"]
+    verbs: ["get", "list", "watch", "patch", "create"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

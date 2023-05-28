@@ -19,7 +19,7 @@ class Resource:
 
     @classmethod
     def create_district(cls) -> "Resource":
-        return cls(ResourceType.DISCRETE, 0.0)
+        return cls(ResourceType.DISCRETE, 0)
 
     def __str__(self) -> str:
         return str(self._value)
@@ -67,7 +67,7 @@ class Resource:
         match self.kind:
             case ResourceType.DISCRETE:
                 return self.__class__(
-                    ResourceType.DISCRETE, random.randint(0.0, self._value)
+                    ResourceType.DISCRETE, random.randint(0, int(self._value))
                 )
             case ResourceType.NUMERICAL:
                 return self.__class__(

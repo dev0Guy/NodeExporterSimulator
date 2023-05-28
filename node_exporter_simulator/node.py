@@ -13,7 +13,7 @@ class NodeResources:
     def __add__(self, other):
         if self.__class__ is not other.__class__:
             raise ValueError(
-                f"Only {self.__class__} Type can be added. not {other.__class__:}"
+                f"Only {self.__class__} Type can be added. not {other.__class__}"
             )
         new_resource = self.__class__()
         for _field in attrs.fields(self.__class__):

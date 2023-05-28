@@ -75,9 +75,9 @@ def get_object_attr_values(_obj: object) -> List[float]:
     )
 
 
-@kopf.on.startup()
-def configure(settings: kopf.OperatorSettings, **kwargs):
-    settings.posting.level = logging.INFO
+# @kopf.on.startup()
+# def configure(settings: kopf.OperatorSettings, **kwargs):
+#     settings.posting.level = logging.INFO
 
 
 class KubernetesMannager:
@@ -103,15 +103,16 @@ class KubernetesMannager:
             logging.debug(f"Collect Node Metrics. Got Max {node_resources}")
             node_usage: NodeResources = node_resources.random_generate()
             usage_as_list = get_object_attr_values(node_usage)
-            logging.debug(f"Collect Node Metrics. Gnerated {node_resources}")
+            logging.warning(f"Collect Node Metrics. Gnerated {node_resources}")
             KubernetesMannager.NODE_EXPORTER.node_usage = usage_as_list
             await asyncio.sleep(sleep_seconds)
 
 
 @kopf.on.update("v1", "pods")
 @kopf.on.create("v1", "pods")
-def pod_creation(logging, spec, name, namespace, uid, **kwargs):
-    if spec.get("nodeName") == KubernetesMannager.NODE_EXPORTER.name:
+def pod_creation(logger, spec, name, namespace, uid, **kwargs):
+    # print(spec.get("nodeName"),KubernetesMannager.NODE_EXPORTER.name)
+    # if spec.get("nodeName") == KubernetesMannager.NODE_EXPORTER.name:
         logging.info(f"Pod {name} Has been Created/Updated in Namespace {namespace}")
         node_resources = list(
             map(
@@ -161,9 +162,6 @@ def pod_deletion(name, namespace, spec, uid, **kwargs):
         logging.info(f"Pod {name} Has been Created/Updated in Namespace {namespace}")
         if uid in KubernetesMannager.PODS:
             KubernetesMannager.PODS.pop(uid)
-
-
-logging.getLogger().setLevel(logging.INFO)
 
 
 async def runner():
