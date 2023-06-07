@@ -1,4 +1,4 @@
-from .resouce import Resource
+from .resource import Resource
 from attrs import define, Factory
 import attrs
 

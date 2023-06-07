@@ -3,22 +3,40 @@ from enum import Enum
 import random
 
 
+"""
+Module Name: resource.py
+"""
+
+
 class ResourceType(Enum):
+    """
+        Enumeration of Resource value type.
+    """
     DISCRETE = 0
     NUMERICAL = 1
 
 
 @define
 class Resource:
+    """
+        Represents a computer/server Resource object.
+    """
+
     kind: ResourceType = field(default=ResourceType.NUMERICAL)
     _value: float = field(default=0.0)
 
     @property
     def value(self) -> float:
+        """
+            Sample resource value.
+        """
         return self._value
 
     @classmethod
     def create_district(cls) -> "Resource":
+        """
+            Generate district resource.
+        """
         return cls(ResourceType.DISCRETE, 0)
 
     def __str__(self) -> str:
@@ -64,6 +82,9 @@ class Resource:
                 )
 
     def random(self) -> "Resource":
+        """
+            Generate resource value acording to its type (uniform).
+        """
         match self.kind:
             case ResourceType.DISCRETE:
                 return self.__class__(

@@ -44,11 +44,5 @@ class PrometheusPusher:
             raise ValueError(
                 f"Metrics values can only be set with a list with the same length. expexted {len(self._current_metric_value)} and got {len(values)}"
             )
-        all_values_are_float = len(
-            list(filter(lambda x: isinstance(x, float), values))
-        ) == len(values)
-        # if not all_values_are_float:
-        #     raise ValueError(f"Metrics values can only be set As Float.")
-        print(values)
         self._current_metric_value = values
         self._push_metrics()

@@ -10,6 +10,7 @@ prometheus:
 
 nodeExporterSimulator:
   enabled: true
+  version: 'v3.0.3'
   interval: '5s'
 
   # Add other configuration options for the custom Python script
