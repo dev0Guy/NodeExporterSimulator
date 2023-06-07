@@ -10,8 +10,10 @@ import socket
 import attrs
 import re
 import uvloop
+
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 import kopf
+
 
 @attrs.define
 class NodeExporter:
@@ -59,20 +61,17 @@ class NodeExporter:
         return Node(node_name, node_resource)
 
     @classmethod
-    def __object_attr_values(cls, _obj: object) -> List[Tuple[str,float]]:
+    def __object_attr_values(cls, _obj: object) -> List[Tuple[str, float]]:
         return list(
             map(
-                lambda x: _obj.__getattribute__(x).value, 
-                map(
-                    lambda x: x.name,
-                    attrs.fields(_obj.__class__)
-                )
+                lambda x: _obj.__getattribute__(x).value,
+                map(lambda x: x.name, attrs.fields(_obj.__class__)),
             )
-        )    
+        )
 
     @classmethod
     def __in__node(cls, node: Node, spec: dict):
-        return node.name == spec.get('nodeName')
+        return node.name == spec.get("nodeName")
 
     def __attrs_post_init__(self):
         self.__load_config()
@@ -91,9 +90,7 @@ class NodeExporter:
         kopf.on.update("v1", "pods")(self.__watch_pods_createion)
         logging.warning("FINISH BUILDING OBJECT")
 
-    async def __watch_pods_createion(
-        self,  spec, name, namespace, uid, **kwargs
-    ):
+    async def __watch_pods_createion(self, spec, name, namespace, uid, **kwargs):
         if self.__in__node(self._node, spec):
             logging.info(
                 f"Pod {name} Has been Created/Updated in Namespace {namespace}"
@@ -176,4 +173,3 @@ class NodeExporter:
 
     def run(self):
         kopf.run()
- 
